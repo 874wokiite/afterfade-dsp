@@ -246,8 +246,17 @@ private val SEMITONE_RATIO = doubleArrayOf(
     1.887748625363387,
 )
 
-/** 半音 [semitones] 分の周波数比。オクターブは2倍・1/2倍で運ぶので誤差が出ない。 */
-internal fun semitoneRatio(semitones: Int): Double {
+/**
+ * Frequency ratio for [semitones] semitones, i.e. `2^(semitones / 12)` without calling `pow`.
+ *
+ * Ratios within one octave come from a correctly rounded table; octaves are applied by
+ * multiplying or dividing by 2, which IEEE-754 defines exactly. `pow` is not required to be
+ * correctly rounded and its last bit differs between the JVM and libm, so this is the only way
+ * to get the same pitch on every platform.
+ *
+ * 半音 [semitones] 分の周波数比。オクターブは2倍・1/2倍で運ぶので誤差が出ない。
+ */
+fun semitoneRatio(semitones: Int): Double {
     val octave = semitones.floorDiv(12)
     var ratio = SEMITONE_RATIO[semitones.mod(12)]
     repeat(if (octave >= 0) octave else -octave) {

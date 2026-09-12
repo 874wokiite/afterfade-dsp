@@ -25,7 +25,7 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 
 | Area | Functions |
 | --- | --- |
-| Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones` |
+| Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
 | Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | Onsets / transients | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
