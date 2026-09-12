@@ -30,3 +30,8 @@ kotlin {
         }
     }
 }
+
+// The README's demo track sits next to the page so the Analyse panel can load it with one click.
+tasks.named<Copy>("wasmJsProcessResources") {
+    from(rootDir.parentFile.resolve("docs/demo.wav"))
+}

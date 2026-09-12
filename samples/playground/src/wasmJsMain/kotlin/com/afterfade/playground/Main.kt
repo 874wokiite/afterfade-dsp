@@ -68,6 +68,8 @@ private fun wireFileInput() {
         picker.files?.item(0)?.let { loadFile(it) }
     }
 
+    button("demo-load").addEventListener("click") { loadDemo() }
+
     val zone = el("drop-zone")
     zone.addEventListener("click") { picker.click() }
     zone.addEventListener("dragover") { event ->
@@ -86,17 +88,31 @@ private fun loadFile(file: File) {
     status("analyse-status", "status.reading", "name" to file.name, working = true)
     readFileBytes(
         file,
-        onBytes = { bytes ->
-            busy("analyse-status", "status.analysing", "name" to file.name) {
-                val audio = Wav.decode(bytes)
-                loaded = audio
-                loadedName = file.name.removeSuffix(".wav").removeSuffix(".WAV").ifEmpty { "audio" }
-                tapeRendered = null
-                analyse(audio)
-            }
-        },
+        onBytes = { bytes -> loadBytes(file.name, bytes) },
         onError = { message -> status("analyse-status", "status.error", "message" to message) },
     )
+}
+
+/** The README's 8-second demo track, copied next to the page at build time (see build.gradle.kts). */
+private const val DEMO_FILE = "demo.wav"
+
+private fun loadDemo() {
+    status("analyse-status", "status.reading", "name" to DEMO_FILE, working = true)
+    fetchBytes(
+        DEMO_FILE,
+        onBytes = { bytes -> loadBytes(DEMO_FILE, bytes) },
+        onError = { message -> status("analyse-status", "status.error", "message" to message) },
+    )
+}
+
+private fun loadBytes(name: String, bytes: ByteArray) {
+    busy("analyse-status", "status.analysing", "name" to name) {
+        val audio = Wav.decode(bytes)
+        loaded = audio
+        loadedName = name.removeSuffix(".wav").removeSuffix(".WAV").ifEmpty { "audio" }
+        tapeRendered = null
+        analyse(audio)
+    }
 }
 
 /** What the estimators found, kept so the metric table can be re-rendered in another language. */

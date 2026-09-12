@@ -360,6 +360,15 @@ button:disabled {
     cursor: not-allowed;
 }
 
+.demo-row {
+    margin-top: 12px;
+}
+
+.demo-row .note {
+    margin: 0;
+    font-size: 13px;
+}
+
 .actions .status {
     margin: 0 0 0 6px;
 }

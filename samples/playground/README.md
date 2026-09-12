@@ -5,7 +5,7 @@ A single page that runs the library in the browser through Kotlin/Wasm, so you c
 
 The page is bilingual: it starts in Japanese when the browser language is Japanese and in English otherwise, and the button in the header switches between the two. Strings live in `I18n.kt`; static text is tagged with `data-i18n` in `index.html`.
 
-- **Analyse** — drop or pick a WAV file and see sample rate, duration, `estimateTempo`,
+- **Analyse** — drop or pick a WAV file, or load the bundled demo track (`docs/demo.wav`), and see sample rate, duration, `estimateTempo`,
   `estimateKey`, `estimatePitch` + `hzToNote`, `rms` and `spectralCentroid`, plus a waveform and an
   averaged spectrum drawn on a `<canvas>` with `RealFftPlan` and `hanning`.
 - **Tape treatment** — the tape chain from the top-level README (`butterworth` low-pass →

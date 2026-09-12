@@ -3,6 +3,7 @@
 package com.afterfade.playground
 
 import kotlinx.browser.document
+import kotlinx.browser.window
 import org.khronos.webgl.Float32Array
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.toByteArray
@@ -89,6 +90,24 @@ fun readFileBytes(file: File, onBytes: (ByteArray) -> Unit, onError: (String) ->
     }
     reader.onerror = { onError("could not read ${file.name}") }
     reader.readAsArrayBuffer(file)
+}
+
+/** Downloads [url] (same origin, e.g. the bundled demo track) into a [ByteArray]. */
+fun fetchBytes(url: String, onBytes: (ByteArray) -> Unit, onError: (String) -> Unit) {
+    window.fetch(url).then { response ->
+        if (!response.ok) {
+            onError("could not fetch $url (${response.status})")
+        } else {
+            response.arrayBuffer().then { buffer ->
+                onBytes(toInt8Array(buffer).toByteArray())
+                null
+            }
+        }
+        null
+    }.catch {
+        onError("could not fetch $url")
+        null
+    }
 }
 
 /** Offers [bytes] to the user as a download named [filename]. */
