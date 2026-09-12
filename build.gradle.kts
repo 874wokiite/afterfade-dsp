@@ -1,3 +1,5 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -25,6 +27,8 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
     iosX64()
+
+    wasmJs { browser() }
 
     sourceSets {
         // Tests live in commonTest only, so the same suite runs on the JVM (fast, no simulator)

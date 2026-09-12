@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>afterfade-dsp playground</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='11' fill='%23e8a33d'/></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="page-header">
+    <div>
+        <h1>afterfade-dsp</h1>
+        <p class="tagline">Pure Kotlin audio DSP for Kotlin Multiplatform — the same code, here in your browser.</p>
+    </div>
+    <a class="repo-link" href="https://github.com/874wokiite/afterfade-dsp">github.com/874wokiite/afterfade-dsp</a>
+</header>
+
+<main>
+    <section class="panel">
+        <h2>Analyse</h2>
+        <p class="note">Everything below is computed by the library itself: <code>Wav.decode</code>,
+            <code>estimateTempo</code>, <code>estimateKey</code>, <code>estimatePitch</code>,
+            <code>rms</code>, <code>spectralCentroid</code>, and <code>Fft</code> for the spectrum.
+            Nothing is uploaded; the file never leaves this tab.</p>
+
+        <div id="drop-zone" class="drop-zone">
+            <strong>Drop a WAV file here</strong>
+            <span>or click to choose one — a few seconds of voice or music works best</span>
+            <input id="file-input" type="file" accept="audio/wav,.wav" hidden>
+        </div>
+        <p id="analyse-status" class="status">no file loaded yet</p>
+
+        <dl class="metrics">
+            <div><dt>Sample rate</dt><dd id="m-samplerate">—</dd></div>
+            <div><dt>Length</dt><dd id="m-duration">—</dd></div>
+            <div><dt>Tempo</dt><dd id="m-tempo">—</dd></div>
+            <div><dt>Key</dt><dd id="m-key">—</dd></div>
+            <div><dt>Pitch</dt><dd id="m-pitch">—</dd></div>
+            <div><dt>RMS</dt><dd id="m-rms">—</dd></div>
+            <div><dt>Spectral centroid</dt><dd id="m-centroid">—</dd></div>
+        </dl>
+
+        <figure>
+            <canvas id="canvas-wave" class="canvas canvas-wave"></canvas>
+            <figcaption>waveform</figcaption>
+        </figure>
+        <figure>
+            <canvas id="canvas-spectrum" class="canvas canvas-spectrum"></canvas>
+            <figcaption>average magnitude spectrum, log frequency, 20 dB per line</figcaption>
+        </figure>
+    </section>
+
+    <section class="panel">
+        <h2>Tape treatment</h2>
+        <p class="note">The chain from the README, run on the file you loaded:
+            <code>butterworth</code> low-pass → <code>tapeWarble</code> → <code>softSaturate</code>
+            → <code>vinylNoise</code> on top → <code>peakNormalized</code>.</p>
+
+        <div class="controls">
+            <label>
+                <span>Warble depth</span>
+                <input id="t-warble" type="range" min="0" max="0.01" step="0.0005" value="0.003">
+                <output id="t-warble-value">0.0030</output>
+            </label>
+            <label>
+                <span>Drive</span>
+                <input id="t-drive" type="range" min="0" max="2" step="0.05" value="0.30">
+                <output id="t-drive-value">0.30</output>
+            </label>
+            <label>
+                <span>Hiss</span>
+                <input id="t-hiss" type="range" min="0" max="0.02" step="0.0005" value="0.004">
+                <output id="t-hiss-value">0.0040</output>
+            </label>
+            <label>
+                <span>Low-pass cutoff</span>
+                <input id="t-cutoff" type="range" min="800" max="16000" step="100" value="12000">
+                <output id="t-cutoff-value">12000 Hz</output>
+            </label>
+        </div>
+
+        <div class="actions">
+            <button id="tape-play" class="primary" type="button" disabled>Play</button>
+            <button id="tape-stop" type="button">Stop</button>
+            <button id="tape-download" type="button" disabled>Download .wav</button>
+            <span id="tape-status" class="status">load a WAV file first</span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Generate ambience</h2>
+        <p class="note">No input audio at all: <code>Rng(seed).gaussianNoise</code> through a 4th-order
+            <code>butterworth</code> low-pass, then <code>peakNormalized</code>.</p>
+
+        <div class="controls controls-inline">
+            <label>
+                <span>Seed</span>
+                <input id="a-seed" type="number" min="0" max="999999" step="1" value="7">
+            </label>
+            <label>
+                <span>Seconds</span>
+                <input id="a-seconds" type="number" min="1" max="60" step="1" value="10">
+            </label>
+            <label>
+                <span>Cutoff (Hz)</span>
+                <input id="a-cutoff" type="number" min="40" max="8000" step="10" value="800">
+            </label>
+        </div>
+
+        <div class="actions">
+            <button id="ambience-play" class="primary" type="button">Play</button>
+            <button id="ambience-stop" type="button">Stop</button>
+            <button id="ambience-download" type="button">Download .wav</button>
+            <span id="ambience-status" class="status">ready</span>
+        </div>
+
+        <p class="note accent-note">The RNG is seeded and pure Kotlin, so the same seed gives you the
+            same audio on iOS, Android, the JVM and here.</p>
+    </section>
+</main>
+
+<footer class="page-footer">
+    Kotlin/Wasm · no server, no upload, all processing on this page ·
+    <a href="https://github.com/874wokiite/afterfade-dsp">source</a>
+</footer>
+
+<script type="application/javascript" src="playground.js"></script>
+</body>
+</html>
