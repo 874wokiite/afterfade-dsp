@@ -27,6 +27,7 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 | --- | --- |
 | Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
 | Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
+| Key | `chroma`, `estimateKey` |
 | Onsets / transients | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
 | Filters | `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
@@ -64,6 +65,17 @@ val (name, octave) = hzToNote(hz)                   // e.g. "A" to 4
 val midi = 69.0 + 12.0 * log2(hz / 440.0)
 val cents = ((midi - round(midi)) * 100).roundToInt()   // distance from the nearest note
 println("$name$octave ${if (cents >= 0) "+" else ""}$cents cents")
+```
+
+### Key estimation
+
+Find the key of one recording, then tune another to it. `estimateKey` returns note and scale
+strings that `pitchShiftToKey` takes as they are.
+
+```kotlin
+val key = estimateKey(reference, sr) ?: return   // null for silence
+println("${key.tonic} ${key.scale} (margin ${key.confidence})")
+val tuned = pitchShiftToKey(other, sr, key.tonic, key.scale)
 ```
 
 ### Tempo (BPM) estimation
