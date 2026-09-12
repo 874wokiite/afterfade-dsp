@@ -63,6 +63,28 @@ h1::before {
     color: var(--muted);
 }
 
+.header-links {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.lang-toggle {
+    font: inherit;
+    font-size: 13px;
+    padding: 4px 10px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--panel-edge);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.lang-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 .repo-link {
     font-family: var(--mono);
     font-size: 13px;

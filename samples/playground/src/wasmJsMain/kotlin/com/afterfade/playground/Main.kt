@@ -2,6 +2,7 @@
 
 package com.afterfade.playground
 
+import com.afterfade.dsp.KeyEstimate
 import com.afterfade.dsp.Rng
 import com.afterfade.dsp.butterworth
 import com.afterfade.dsp.estimateKey
@@ -43,7 +44,20 @@ fun main() {
     wireFileInput()
     wireTape()
     wireAmbience()
-    setStatus("analyse-status", "no file loaded yet")
+    wireLanguage()
+    status("analyse-status", "status.none")
+}
+
+// --- Language -------------------------------------------------------------------------------------
+
+private fun wireLanguage() {
+    button("lang-toggle").addEventListener("click") { toggleLanguage() }
+    applyLanguage()
+    onLanguageChange {
+        // Static text is swapped by applyLanguage(); redo the text this file produced itself.
+        for ((id, last) in lastStatus) setStatus(id, t(last.key, *last.args), el(id).classList.contains("working"))
+        renderMetrics()
+    }
 }
 
 // --- Analyse -------------------------------------------------------------------------------------
@@ -69,11 +83,11 @@ private fun wireFileInput() {
 }
 
 private fun loadFile(file: File) {
-    setStatus("analyse-status", "reading ${file.name}…", working = true)
+    status("analyse-status", "status.reading", "name" to file.name, working = true)
     readFileBytes(
         file,
         onBytes = { bytes ->
-            busy("analyse-status", "analysing ${file.name}…") {
+            busy("analyse-status", "status.analysing", "name" to file.name) {
                 val audio = Wav.decode(bytes)
                 loaded = audio
                 loadedName = file.name.removeSuffix(".wav").removeSuffix(".WAV").ifEmpty { "audio" }
@@ -81,38 +95,78 @@ private fun loadFile(file: File) {
                 analyse(audio)
             }
         },
-        onError = { message -> setStatus("analyse-status", message) },
+        onError = { message -> status("analyse-status", "status.error", "message" to message) },
     )
 }
 
-private fun analyse(audio: WavAudio): String {
+/** What the estimators found, kept so the metric table can be re-rendered in another language. */
+private class Analysis(
+    val sampleRate: Int,
+    val seconds: Double,
+    val sampleCount: Int,
+    val channels: Int,
+    val bits: Int,
+    val bpm: Double?,
+    val key: KeyEstimate?,
+    val hz: Double?,
+    val rms: Float,
+    val peak: Float,
+    val centroid: Double,
+    val truncated: Boolean,
+)
+
+private var analysis: Analysis? = null
+
+private fun analyse(audio: WavAudio): Status {
     val samples = audio.samples
     val sr = audio.sampleRate
     val seconds = samples.size.toDouble() / sr
     val head = if (samples.size > sr * ANALYSIS_SECONDS) samples.copyOf(sr * ANALYSIS_SECONDS) else samples
 
-    show("m-samplerate", "$sr Hz")
-    show("m-duration", "${fmt(seconds, 2)} s · ${samples.size} samples · ${audio.sourceChannels}ch/${audio.sourceBitsPerSample}-bit source")
-
-    val bpm = estimateTempo(head, sr)
-    show("m-tempo", if (bpm == null) "—" else "${fmt(bpm, 1)} BPM")
-
-    val key = estimateKey(head, sr)
-    show("m-key", if (key == null) "—" else "${key.tonic} ${key.scale} · confidence ${fmt(key.confidence, 3)}")
-
-    val hz = estimatePitch(head, sr)
-    show("m-pitch", if (hz == null) "—" else "${fmt(hz, 1)} Hz · ${hzToNote(hz).let { (name, octave) -> "$name$octave" }}")
-
-    show("m-rms", "${fmt(rms(head).toDouble(), 4)} · peak ${fmt(peakOf(samples).toDouble(), 3)}")
-    show("m-centroid", "${fmt(spectralCentroid(head, sr), 0)} Hz")
+    val result = Analysis(
+        sampleRate = sr,
+        seconds = seconds,
+        sampleCount = samples.size,
+        channels = audio.sourceChannels,
+        bits = audio.sourceBitsPerSample,
+        bpm = estimateTempo(head, sr),
+        key = estimateKey(head, sr),
+        hz = estimatePitch(head, sr),
+        rms = rms(head),
+        peak = peakOf(samples),
+        centroid = spectralCentroid(head, sr),
+        truncated = head.size < samples.size,
+    )
+    analysis = result
+    renderMetrics()
 
     drawWaveform(canvas("canvas-wave"), samples)
     drawSpectrum(canvas("canvas-spectrum"), head, sr)
 
     enable("tape-play", true)
     enable("tape-download", true)
-    val truncated = if (head.size < samples.size) " (estimates from the first ${ANALYSIS_SECONDS}s)" else ""
-    return "${loadedName}.wav loaded$truncated"
+    val extra = if (result.truncated) t("status.truncated", "s" to "$ANALYSIS_SECONDS") else ""
+    return st("status.loaded", "name" to "$loadedName.wav", "extra" to extra)
+}
+
+private fun renderMetrics() {
+    val a = analysis ?: return
+    show("m-samplerate", t("value.hz", "hz" to "${a.sampleRate}"))
+    show(
+        "m-duration",
+        t("value.duration", "s" to fmt(a.seconds, 2), "n" to "${a.sampleCount}", "ch" to "${a.channels}", "bits" to "${a.bits}"),
+    )
+    show("m-tempo", a.bpm?.let { t("value.bpm", "bpm" to fmt(it, 1)) } ?: "—")
+    show(
+        "m-key",
+        a.key?.let { t("value.key", "tonic" to it.tonic, "scale" to t("scale.${it.scale}"), "conf" to fmt(it.confidence, 3)) } ?: "—",
+    )
+    show(
+        "m-pitch",
+        a.hz?.let { hz -> t("value.pitch", "hz" to fmt(hz, 1), "note" to hzToNote(hz).let { (name, octave) -> "$name$octave" }) } ?: "—",
+    )
+    show("m-rms", t("value.rms", "rms" to fmt(a.rms.toDouble(), 4), "peak" to fmt(a.peak.toDouble(), 3)))
+    show("m-centroid", t("value.hz", "hz" to fmt(a.centroid, 0)))
 }
 
 // --- Tape treatment ------------------------------------------------------------------------------
@@ -130,30 +184,30 @@ private fun wireTape() {
     button("tape-play").addEventListener("click") {
         val audio = loaded
         if (audio == null) {
-            setStatus("tape-status", "load a WAV file first")
+            status("tape-status", "status.loadfirst")
         } else {
-            busy("tape-status", "processing…") {
+            busy("tape-status", "status.processing") {
                 val out = renderTape(audio)
                 playSamples(out, audio.sampleRate)
-                "playing ${fmt(out.size.toDouble() / audio.sampleRate, 2)} s"
+                st("status.playing", "s" to fmt(out.size.toDouble() / audio.sampleRate, 2))
             }
         }
     }
 
     button("tape-stop").addEventListener("click") {
         stopPlayback()
-        setStatus("tape-status", "stopped")
+        status("tape-status", "status.stopped")
     }
 
     button("tape-download").addEventListener("click") {
         val audio = loaded
         if (audio == null) {
-            setStatus("tape-status", "load a WAV file first")
+            status("tape-status", "status.loadfirst")
         } else {
-            busy("tape-status", "encoding…") {
+            busy("tape-status", "status.encoding") {
                 val out = renderTape(audio)
                 downloadBytes(Wav.encodePcm16(out, audio.sampleRate), "$loadedName-tape.wav")
-                "downloaded $loadedName-tape.wav"
+                st("status.downloaded", "name" to "$loadedName-tape.wav")
             }
         }
     }
@@ -197,28 +251,28 @@ private fun wireAmbience() {
     }
 
     button("ambience-play").addEventListener("click") {
-        busy("ambience-status", "generating…") {
+        busy("ambience-status", "status.generating") {
             val out = renderAmbience()
             playSamples(out, AMBIENCE_SAMPLE_RATE)
-            "playing ${fmt(out.size.toDouble() / AMBIENCE_SAMPLE_RATE, 1)} s from seed ${seedValue()}"
+            st("status.playingSeed", "s" to fmt(out.size.toDouble() / AMBIENCE_SAMPLE_RATE, 1), "seed" to "${seedValue()}")
         }
     }
 
     button("ambience-stop").addEventListener("click") {
         stopPlayback()
-        setStatus("ambience-status", "stopped")
+        status("ambience-status", "status.stopped")
     }
 
     button("ambience-download").addEventListener("click") {
-        busy("ambience-status", "encoding…") {
+        busy("ambience-status", "status.encoding") {
             val out = renderAmbience()
             val name = "ambience-seed${seedValue()}.wav"
             downloadBytes(Wav.encodePcm16(out, AMBIENCE_SAMPLE_RATE), name)
-            "downloaded $name"
+            st("status.downloaded", "name" to name)
         }
     }
 
-    setStatus("ambience-status", "ready")
+    status("ambience-status", "status.ready")
 }
 
 /** Seeded gaussian noise, low-passed into a bed. No input audio is involved. */
@@ -270,6 +324,18 @@ private fun showSliderValue(id: String) {
     show("$id-value", text)
 }
 
+/** A status line as a translation key plus its arguments, so it can be re-rendered on a language switch. */
+private class Status(val key: String, val args: Array<out Pair<String, String>>)
+
+private fun st(key: String, vararg args: Pair<String, String>) = Status(key, args)
+
+private val lastStatus = mutableMapOf<String, Status>()
+
+private fun status(id: String, key: String, vararg args: Pair<String, String>, working: Boolean = false) {
+    lastStatus[id] = Status(key, args)
+    setStatus(id, t(key, *args), working)
+}
+
 private fun setStatus(id: String, message: String, working: Boolean = false) {
     val element = el(id)
     element.textContent = message
@@ -281,15 +347,15 @@ private fun setStatus(id: String, message: String, working: Boolean = false) {
  * returns. Everything here is synchronous main-thread DSP, so without the yield the "working…"
  * line would only appear after the work had already finished.
  */
-private fun busy(statusId: String, message: String, work: () -> String) {
-    setStatus(statusId, message, working = true)
+private fun busy(statusId: String, key: String, vararg args: Pair<String, String>, work: () -> Status) {
+    status(statusId, key, *args, working = true)
     defer(24) {
         val result = try {
             work()
-        } catch (t: Throwable) {
-            "error: ${t.message ?: t.toString()}"
+        } catch (e: Throwable) {
+            st("status.error", "message" to (e.message ?: e.toString()))
         }
-        setStatus(statusId, result)
+        status(statusId, result.key, *result.args)
     }
 }
 

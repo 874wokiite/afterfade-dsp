@@ -1,0 +1,171 @@
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
+package com.afterfade.playground
+
+import kotlinx.browser.document
+import kotlinx.browser.localStorage
+import kotlinx.browser.window
+import org.w3c.dom.HTMLElement
+import org.w3c.dom.get
+
+/**
+ * English / Japanese switch for the page.
+ *
+ * Static text carries a `data-i18n="key"` attribute in `index.html` and is swapped in place by
+ * [applyLanguage]. Dynamic text (status lines, metric values) is produced through [t] and
+ * re-rendered by the callers registered with [onLanguageChange], so a toggle never leaves a
+ * half-translated page.
+ */
+enum class Lang(val tag: String, val label: String) {
+    EN("en", "English"),
+    JA("ja", "日本語"),
+}
+
+private const val STORAGE_KEY = "afterfade-dsp.lang"
+
+var lang: Lang = restoreLang()
+    private set
+
+private val listeners = mutableListOf<() -> Unit>()
+
+private fun restoreLang(): Lang {
+    val stored = runCatching { localStorage[STORAGE_KEY] }.getOrNull()
+    if (stored != null) return Lang.entries.firstOrNull { it.tag == stored } ?: Lang.EN
+    val navigator = runCatching { window.navigator.language }.getOrNull().orEmpty()
+    return if (navigator.startsWith("ja")) Lang.JA else Lang.EN
+}
+
+fun onLanguageChange(listener: () -> Unit) {
+    listeners += listener
+}
+
+fun toggleLanguage() {
+    setLanguage(if (lang == Lang.EN) Lang.JA else Lang.EN)
+}
+
+fun setLanguage(next: Lang) {
+    lang = next
+    runCatching { localStorage.setItem(STORAGE_KEY, next.tag) }
+    applyLanguage()
+    listeners.forEach { it() }
+}
+
+/** Swaps every `data-i18n` element and the toggle label to the current [lang]. */
+fun applyLanguage() {
+    document.documentElement?.setAttribute("lang", lang.tag)
+    val nodes = document.querySelectorAll("[data-i18n]")
+    for (i in 0 until nodes.length) {
+        val element = nodes.item(i) as? HTMLElement ?: continue
+        val key = element.getAttribute("data-i18n") ?: continue
+        element.innerHTML = t(key)
+    }
+    document.getElementById("lang-toggle")?.let { it.textContent = (if (lang == Lang.EN) Lang.JA else Lang.EN).label }
+    document.title = t("page.title")
+}
+
+/**
+ * Looks up [key] in the current language and fills `{name}` placeholders from [args].
+ * Values are trusted HTML written in this file, never user input.
+ */
+fun t(key: String, vararg args: Pair<String, String>): String {
+    val pair = STRINGS[key] ?: return key
+    var text = if (lang == Lang.JA) pair.second else pair.first
+    for ((name, value) in args) text = text.replace("{$name}", value)
+    return text
+}
+
+private infix fun String.ja(other: String): Pair<String, String> = this to other
+
+private val STRINGS: Map<String, Pair<String, String>> = mapOf(
+    "page.title" to ("afterfade-dsp playground" ja "afterfade-dsp playground"),
+    "tagline" to ("Pure Kotlin audio DSP for Kotlin Multiplatform — the same code, here in your browser."
+        ja "Kotlin Multiplatform 向けの純 Kotlin 音声 DSP。同じコードが、このブラウザの中で動いています。"),
+
+    // Analyse
+    "analyse.title" to ("Analyse" ja "解析"),
+    "analyse.note" to ("Everything below is computed by the library itself: <code>Wav.decode</code>, " +
+        "<code>estimateTempo</code>, <code>estimateKey</code>, <code>estimatePitch</code>, " +
+        "<code>rms</code>, <code>spectralCentroid</code>, and <code>Fft</code> for the spectrum. " +
+        "Nothing is uploaded; the file never leaves this tab."
+        ja "下の値は全部ライブラリ自身が計算しています。<code>Wav.decode</code>、" +
+        "<code>estimateTempo</code>、<code>estimateKey</code>、<code>estimatePitch</code>、" +
+        "<code>rms</code>、<code>spectralCentroid</code>、スペクトルは <code>Fft</code>。" +
+        "どこにも送信しません。ファイルはこのタブから出ていきません。"),
+    "drop.title" to ("Drop a WAV file here" ja "ここに WAV ファイルを落とす"),
+    "drop.sub" to ("or click to choose one — a few seconds of voice or music works best"
+        ja "クリックして選んでも可。数秒の声や音楽がいちばん向いています"),
+    "metric.samplerate" to ("Sample rate" ja "サンプルレート"),
+    "metric.duration" to ("Length" ja "長さ"),
+    "metric.tempo" to ("Tempo" ja "テンポ"),
+    "metric.key" to ("Key" ja "キー"),
+    "metric.pitch" to ("Pitch" ja "ピッチ"),
+    "metric.rms" to ("RMS" ja "RMS"),
+    "metric.centroid" to ("Spectral centroid" ja "スペクトル重心"),
+    "fig.wave" to ("waveform" ja "波形"),
+    "fig.spectrum" to ("average magnitude spectrum, log frequency, 20 dB per line"
+        ja "平均振幅スペクトル。周波数は対数軸、横線は 20 dB ごと"),
+
+    // Metric values
+    "value.duration" to ("{s} s · {n} samples · {ch}ch/{bits}-bit source"
+        ja "{s} 秒 · {n} サンプル · 元は {ch}ch / {bits}-bit"),
+    "value.bpm" to ("{bpm} BPM" ja "{bpm} BPM"),
+    "value.key" to ("{tonic} {scale} · confidence {conf}" ja "{tonic} {scale} · 確信度 {conf}"),
+    "value.pitch" to ("{hz} Hz · {note}" ja "{hz} Hz · {note}"),
+    "value.rms" to ("{rms} · peak {peak}" ja "{rms} · ピーク {peak}"),
+    "value.hz" to ("{hz} Hz" ja "{hz} Hz"),
+    "scale.major" to ("major" ja "メジャー"),
+    "scale.minor" to ("minor" ja "マイナー"),
+
+    // Analyse status
+    "status.none" to ("no file loaded yet" ja "まだファイルを読み込んでいません"),
+    "status.reading" to ("reading {name}…" ja "{name} を読み込み中…"),
+    "status.analysing" to ("analysing {name}…" ja "{name} を解析中…"),
+    "status.loaded" to ("{name} loaded{extra}" ja "{name} を読み込みました{extra}"),
+    "status.truncated" to (" (estimates from the first {s}s)" ja "（推定は先頭 {s} 秒から）"),
+    "status.error" to ("error: {message}" ja "エラー: {message}"),
+
+    // Tape treatment
+    "tape.title" to ("Tape treatment" ja "テープ処理"),
+    "tape.note" to ("The chain from the README, run on the file you loaded: " +
+        "<code>butterworth</code> low-pass → <code>tapeWarble</code> → <code>softSaturate</code> " +
+        "→ <code>vinylNoise</code> on top → <code>peakNormalized</code>."
+        ja "README のチェーンを、読み込んだファイルにかけます。" +
+        "<code>butterworth</code> ローパス → <code>tapeWarble</code> → <code>softSaturate</code> " +
+        "→ <code>vinylNoise</code> を重ねる → <code>peakNormalized</code>。"),
+    "tape.warble" to ("Warble depth" ja "揺れの深さ"),
+    "tape.drive" to ("Drive" ja "ドライブ"),
+    "tape.hiss" to ("Hiss" ja "ヒス"),
+    "tape.cutoff" to ("Low-pass cutoff" ja "ローパスのカットオフ"),
+    "btn.play" to ("Play" ja "再生"),
+    "btn.stop" to ("Stop" ja "停止"),
+    "btn.download" to ("Download .wav" ja ".wav を保存"),
+    "status.loadfirst" to ("load a WAV file first" ja "先に WAV ファイルを読み込んでください"),
+    "status.processing" to ("processing…" ja "処理中…"),
+    "status.playing" to ("playing {s} s" ja "{s} 秒を再生中"),
+    "status.stopped" to ("stopped" ja "停止しました"),
+    "status.encoding" to ("encoding…" ja "書き出し中…"),
+    "status.downloaded" to ("downloaded {name}" ja "{name} を保存しました"),
+
+    // Ambience
+    "amb.title" to ("Generate ambience" ja "環境音を生成"),
+    "amb.note" to ("No input audio at all: <code>Rng(seed).gaussianNoise</code> through a 4th-order " +
+        "<code>butterworth</code> low-pass, then <code>peakNormalized</code>."
+        ja "入力音声は不要です。<code>Rng(seed).gaussianNoise</code> を 4 次の " +
+        "<code>butterworth</code> ローパスに通し、<code>peakNormalized</code> で揃えます。"),
+    "amb.seed" to ("Seed" ja "シード"),
+    "amb.seconds" to ("Seconds" ja "秒数"),
+    "amb.cutoff" to ("Cutoff (Hz)" ja "カットオフ (Hz)"),
+    "amb.determinism" to ("The RNG is seeded and pure Kotlin, so the same seed gives you the same audio " +
+        "on iOS, Android, the JVM and here."
+        ja "乱数はシード付きの純 Kotlin なので、同じシードなら iOS でも Android でも JVM でもここでも、" +
+        "同じ音になります。"),
+    "status.generating" to ("generating…" ja "生成中…"),
+    "status.playingSeed" to ("playing {s} s from seed {seed}" ja "シード {seed} から {s} 秒を再生中"),
+    "status.ready" to ("ready" ja "準備完了"),
+
+    // Footer
+    "footer" to ("Kotlin/Wasm · no server, no upload, all processing on this page · " +
+        "<a href=\"https://github.com/874wokiite/afterfade-dsp\">source</a>"
+        ja "Kotlin/Wasm · サーバーなし、アップロードなし、処理は全部このページの中 · " +
+        "<a href=\"https://github.com/874wokiite/afterfade-dsp\">ソース</a>"),
+)
