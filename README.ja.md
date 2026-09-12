@@ -2,6 +2,11 @@
 
 [English](README.md) | 日本語
 
+[![CI](https://github.com/874wokiite/afterfade-dsp/actions/workflows/ci.yml/badge.svg)](https://github.com/874wokiite/afterfade-dsp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/874wokiite/afterfade-dsp)](https://github.com/874wokiite/afterfade-dsp/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+![Targets](https://img.shields.io/badge/targets-jvm%20%7C%20android%20%7C%20ios%20%7C%20wasm-orange)
+
 Kotlin Multiplatform 向けの純 Kotlin 音声 DSP ライブラリ。外部依存ゼロ、`commonMain` だけで完結し、
 同じテストが Android・iOS・JVM・ブラウザ（Wasm）で通ります。
 
