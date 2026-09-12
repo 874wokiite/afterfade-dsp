@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git push*)",
+            "command": "cmd=$(jq -r '.tool_input.command'); case \"$cmd\" in *'git push'*) cd \"$CLAUDE_PROJECT_DIR\" && ./gradlew jvmTest -q >/dev/null 2>&1 || { echo 'jvmTest failed: push blocked. Run ./gradlew jvmTest to see the failures.' >&2; exit 2; };; esac",
+            "timeout": 600,
+            "statusMessage": "Running jvmTest before push..."
+          }
+        ]
+      }
+    ]
+  }
+}
