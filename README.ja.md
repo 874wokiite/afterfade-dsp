@@ -3,11 +3,37 @@
 [English](README.md) | 日本語
 
 Kotlin Multiplatform 向けの純 Kotlin 音声 DSP ライブラリ。外部依存ゼロ、`commonMain` だけで完結し、
-同じテストが Android・iOS・JVM で通ります。
+同じテストが Android・iOS・JVM・ブラウザ（Wasm）で通ります。
 
-[Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416) の本番音声エンジンから、
-ロジックを変えずに切り出したものです。iOS と Android で今日動いています。
-数秒の音声を共有 Kotlin コードでオフライン処理するために作られており、低レイテンシのライブエフェクトは対象外です。
+![デモ音源のスペクトログラム。検出したオンセット、テンポ、キーを重ねたもの](docs/hero.png)
+
+*この図の中身は全部このライブラリで作っています。音源（[docs/demo.wav](docs/demo.wav)）は `Rng`・`butterworth`・`semitoneRatio` で生成し、
+スペクトログラムは `RealFftPlan` で描き、目盛りは `pickOnsets`、右上の文字は `estimateTempo` と `estimateKey` の出力です。*
+
+> **[Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416) の本番音声エンジンから、ロジックを変えずに切り出したものです。**
+> Afterfade は、その日の音を端末内だけでローファイトラックに変えるアプリで、iOS と Android で今日動いています。
+> このライブラリはそのエンジンのうち Afterfade 固有でない部分です。数秒の音声を共有 Kotlin コードで
+> オフライン処理するために作られており、低レイテンシのライブエフェクトは対象外です。
+
+## まず試す
+
+**ブラウザで。** [playground](samples/playground/) はこのライブラリを Kotlin/Wasm として動かします。
+WAV を落とすとテンポ・キー・ピッチが出て、テープ処理した音をその場で聴け、シードから環境音を生成できます。
+手元では `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun` で起動します
+（リポジトリ公開後は GitHub Pages に置きます）。
+
+**コマンドラインで。** コードを書かずに試せます。パスはリポジトリ直下からの相対です。
+
+```sh
+./gradlew -p samples :cli:run --args="tempo docs/demo.wav"         # about 96 BPM
+./gradlew -p samples :cli:run --args="key docs/demo.wav"           # D minor (confidence 0.21)
+./gradlew -p samples :cli:run --args="info docs/demo.wav"          # レート、長さ、rms、重心、ZCR
+./gradlew -p samples :cli:run --args="tape in.wav tape.wav"        # ローパス、ワウ、飽和、ヒス
+./gradlew -p samples :cli:run --args="ambience out.wav --seed 7"   # 風のようなノイズを 10 秒
+./gradlew -p samples :cli:run --args="plot docs/demo.wav hero.png" # 上の図
+```
+
+コマンド一覧は [samples/cli/README.md](samples/cli/README.md) にあります。
 
 ## なぜ作ったか
 
@@ -135,7 +161,7 @@ val out = Wav.encodePcm16(peakNormalized(bed, 0.5f), sr)
 
 ## ターゲット
 
-`jvm`, `android`（minSdk 24）, `iosArm64`, `iosSimulatorArm64`, `iosX64`
+`jvm`, `android`（minSdk 24）, `iosArm64`, `iosSimulatorArm64`, `iosX64`, `wasmJs`（ブラウザ）
 
 ## 導入
 
@@ -216,7 +242,11 @@ Afterfade は、その日の音を端末内だけでローファイトラック�
 ./gradlew jvmTest                 # ホストの JVM で速く回す
 ./gradlew iosSimulatorArm64Test   # 同じテストを iOS シミュレータで
 ./gradlew assemble                # 全ターゲットをコンパイル
+./gradlew -p samples :cli:installDist                       # コマンドラインのサンプル
+./gradlew -p samples :playground:wasmJsBrowserDistribution  # ブラウザ playground を静的サイトとして
 ```
+
+サンプルは [samples/](samples/) の別 Gradle ビルドに置いてあり、ライブラリ本体は依存ゼロのままです。
 
 ## ライセンス
 

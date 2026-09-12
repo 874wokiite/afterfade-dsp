@@ -3,11 +3,39 @@
 English | [日本語](README.ja.md)
 
 Pure Kotlin audio DSP for Kotlin Multiplatform. Zero dependencies, `commonMain` only, the same
-tests pass on Android, iOS and the JVM.
+tests pass on Android, iOS, the JVM and the browser (Wasm).
 
-Extracted unchanged from [Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416)'s
-production audio engine. Runs on iOS and Android today. Built for offline processing of a few
-seconds of audio in shared Kotlin code, not for low-latency live effects.
+![Spectrogram of the demo track with detected onsets, tempo and key](docs/hero.png)
+
+*Everything in this picture was made by the library: the audio ([docs/demo.wav](docs/demo.wav)) is
+generated with `Rng`, `butterworth` and `semitoneRatio`, the spectrogram is drawn from `RealFftPlan`,
+the ticks are `pickOnsets`, and the caption comes from `estimateTempo` and `estimateKey`.*
+
+> **Extracted unchanged from [Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416)'s
+> production audio engine.** Afterfade turns the sounds of your day into a lo-fi track, entirely on
+> the device, on iOS and Android today. This library is the part of that engine that is not
+> Afterfade-specific. Built for offline processing of a few seconds of audio in shared Kotlin code,
+> not for low-latency live effects.
+
+## Try it
+
+**In the browser.** The [playground](samples/playground/) runs the library as Kotlin/Wasm: drop a
+WAV to get its tempo, key and pitch, hear it with a tape treatment, or generate ambience from a seed.
+Run it locally with `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun`
+(a hosted copy is published with GitHub Pages once the repository is public).
+
+**From the command line.** No code to write; paths are relative to the repository root.
+
+```sh
+./gradlew -p samples :cli:run --args="tempo docs/demo.wav"         # about 96 BPM
+./gradlew -p samples :cli:run --args="key docs/demo.wav"           # D minor (confidence 0.21)
+./gradlew -p samples :cli:run --args="info docs/demo.wav"          # rate, length, rms, centroid, ZCR
+./gradlew -p samples :cli:run --args="tape in.wav tape.wav"        # lowpass, warble, saturation, hiss
+./gradlew -p samples :cli:run --args="ambience out.wav --seed 7"   # 10 s of wind-like noise
+./gradlew -p samples :cli:run --args="plot docs/demo.wav hero.png" # the picture above
+```
+
+All commands are listed in [samples/cli/README.md](samples/cli/README.md).
 
 ## Why
 
@@ -138,7 +166,7 @@ val out = Wav.encodePcm16(peakNormalized(bed, 0.5f), sr)
 
 ## Targets
 
-`jvm`, `android` (minSdk 24), `iosArm64`, `iosSimulatorArm64`, `iosX64`.
+`jvm`, `android` (minSdk 24), `iosArm64`, `iosSimulatorArm64`, `iosX64`, `wasmJs` (browser).
 
 ## Install
 
@@ -219,7 +247,12 @@ recipe and it stays in the app.** `softSaturate(y, drive)` is here; `lofiMaster`
 ./gradlew jvmTest                 # fast, runs on the host JVM
 ./gradlew iosSimulatorArm64Test   # same tests on the iOS simulator
 ./gradlew assemble                # compile every target
+./gradlew -p samples :cli:installDist                       # the command-line sample
+./gradlew -p samples :playground:wasmJsBrowserDistribution  # the browser playground as a static site
 ```
+
+The samples live in a separate Gradle build under [samples/](samples/) so the library itself stays
+dependency-free.
 
 ## License
 
