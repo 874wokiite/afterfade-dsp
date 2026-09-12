@@ -24,7 +24,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 
 | 領域 | 関数 |
 | --- | --- |
-| ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones` |
+| ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
 | ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | オンセット / トランジェント | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | エフェクト | `tapeWarble`, `vinylNoise`, `softSaturate` |
