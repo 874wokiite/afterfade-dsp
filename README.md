@@ -6,6 +6,10 @@ English | [日本語](README.ja.md)
 [![Release](https://img.shields.io/github/v/release/874wokiite/afterfade-dsp)](https://github.com/874wokiite/afterfade-dsp/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Targets](https://img.shields.io/badge/targets-jvm%20%7C%20android%20%7C%20ios%20%7C%20wasm-orange)
+[![Playground](https://img.shields.io/badge/playground-run%20it%20in%20your%20browser-e8a33d)](https://874wokiite.github.io/afterfade-dsp/)
+
+**▶ Try it in your browser, no install: [874wokiite.github.io/afterfade-dsp](https://874wokiite.github.io/afterfade-dsp/)** — drop a WAV to
+get its tempo, key and pitch, hear a tape treatment, or generate ambience from a seed.
 
 Pure Kotlin audio DSP for Kotlin Multiplatform. Zero dependencies, `commonMain` only, the same
 tests pass on Android, iOS, the JVM and the browser (Wasm).

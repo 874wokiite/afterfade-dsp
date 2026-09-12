@@ -6,6 +6,10 @@
 [![Release](https://img.shields.io/github/v/release/874wokiite/afterfade-dsp)](https://github.com/874wokiite/afterfade-dsp/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Targets](https://img.shields.io/badge/targets-jvm%20%7C%20android%20%7C%20ios%20%7C%20wasm-orange)
+[![Playground](https://img.shields.io/badge/playground-ブラウザで試す-e8a33d)](https://874wokiite.github.io/afterfade-dsp/)
+
+**▶ インストール不要、ブラウザで試せます: [874wokiite.github.io/afterfade-dsp](https://874wokiite.github.io/afterfade-dsp/)** — WAV を落とすと
+テンポ・キー・ピッチが出て、テープ処理した音を聴けて、シードから環境音を生成できます。
 
 Kotlin Multiplatform 向けの純 Kotlin 音声 DSP ライブラリ。外部依存ゼロ、`commonMain` だけで完結し、
 同じテストが Android・iOS・JVM・ブラウザ（Wasm）で通ります。
