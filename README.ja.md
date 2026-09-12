@@ -26,6 +26,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | --- | --- |
 | ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `hzToMidi`, `nearestScaleSemitones`, `semitoneRatio` |
 | ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey`, `timeStretch` |
+| キー推定 | `chroma`, `estimateKey` |
 | オンセット / トランジェント | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | テンポ | `estimateTempo`, `estimateTempoFromEnvelope` |
 | 特徴量 | `rms`, `zeroCrossingRate`, `spectralCentroid` |
@@ -64,6 +65,17 @@ val (name, octave) = hzToNote(hz)                   // 例: "A" to 4
 val midi = 69.0 + 12.0 * log2(hz / 440.0)
 val cents = ((midi - round(midi)) * 100).roundToInt()   // 最寄りの音からのずれ
 println("$name$octave ${if (cents >= 0) "+" else ""}$cents cents")
+```
+
+### キー推定
+
+ある録音のキーを推定して、別の音をそのキーに合わせます。`estimateKey` が返す音名とスケールの文字列は、
+そのまま `pitchShiftToKey` に渡せます。
+
+```kotlin
+val key = estimateKey(reference, sr) ?: return   // 無音は null
+println("${key.tonic} ${key.scale}（2位との差 ${key.confidence}）")
+val tuned = pitchShiftToKey(other, sr, key.tonic, key.scale)
 ```
 
 ### テンポ（BPM）推定
