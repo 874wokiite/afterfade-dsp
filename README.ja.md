@@ -27,6 +27,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
 | ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | オンセット / トランジェント | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
+| テンポ | `estimateTempo`, `estimateTempoFromEnvelope` |
 | エフェクト | `tapeWarble`, `vinylNoise`, `softSaturate` |
 | フィルタ | `SosFilters`（44.1 kHz 用に設計済みの Butterworth セクション）, `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
@@ -46,7 +47,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | やりたいこと | 使う部品 | ライブラリの外で要るもの |
 | --- | --- | --- |
 | チューナー、ボーカル練習、声の高さの記録 | `estimatePitch` / `hzToNote` / `nearestScaleSemitones` | マイクのストリーミング入力 |
-| テンポ（BPM）推定、ビート同期の演出 | `onsetStrength` / `pickOnsets` | 音源の読み込み（WAV 以外は OS のデコーダ） |
+| テンポ（BPM）推定、ビート同期の演出 | `estimateTempo` / `onsetStrength` / `pickOnsets` | 音源の読み込み（WAV 以外は OS のデコーダ） |
 | ボイスメモをテープ風・レコード風にする | `tapeWarble` / `vinylNoise` / `softSaturate` / `Wav` | 録音と共有 |
 | 波形・スペクトルの可視化 | `Fft` / `RealFftPlan` / `hanning` / `rfftFreq` | Canvas 描画 |
 | 環境音・ノイズ・睡眠音の生成 | `Rng` / `sosfilt` / `resample` / `Wav` | 再生だけ（入力は不要） |
@@ -66,18 +67,17 @@ println("$name$octave ${if (cents >= 0) "+" else ""}$cents cents")
 
 ### テンポ（BPM）推定
 
-オンセット（音の立ち上がり）の間隔の中央値からテンポを出す簡易版です。
+オンセット強度エンベロープの自己相関でテンポを求めます。半分・倍のテンポと迷う場合は、
+120 BPM 付近を中心とした事前分布で寄せます。
 
 ```kotlin
-val hop = 512
-val env = onsetStrength(y, sr, hopLength = hop)
-val onsets = pickOnsets(env, delta = 0.3f)          // オンセットのフレーム番号
-if (onsets.size >= 2) {
-    val intervals = onsets.toList().zipWithNext { a, b -> (b - a) * hop / sr.toDouble() }
-    val bpm = 60.0 / median(intervals.toDoubleArray())
-    println("about ${bpm.roundToInt()} BPM")
-}
+val bpm = estimateTempo(y, sr) ?: return            // 無音や短すぎる入力は null
+println("about ${bpm.roundToInt()} BPM")
 ```
+
+素材が分かっているなら `estimateTempo(y, sr, minBpm = 70.0, maxBpm = 140.0)` で探索範囲を狭められます。
+エンベロープを別の用途（描画や `pickOnsets`）で既に計算しているなら、
+`estimateTempoFromEnvelope(env, sr)` に渡せば重い部分を二度計算せずに済みます。
 
 ### ボイスメモをテープ風にする
 

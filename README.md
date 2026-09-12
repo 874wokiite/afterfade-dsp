@@ -28,6 +28,7 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 | Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
 | Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | Onsets / transients | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
+| Tempo | `estimateTempo`, `estimateTempoFromEnvelope` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
 | Filters | `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
@@ -48,7 +49,7 @@ and out (playback, drawing, sharing).
 | Goal | Parts used | Needed outside the library |
 | --- | --- | --- |
 | Tuner, vocal practice, a diary of your voice's pitch | `estimatePitch` / `hzToNote` / `nearestScaleSemitones` | streaming microphone input |
-| Tempo (BPM) estimation, beat-synced visuals | `onsetStrength` / `pickOnsets` | loading audio (platform decoder for non-WAV) |
+| Tempo (BPM) estimation, beat-synced visuals | `estimateTempo` / `onsetStrength` / `pickOnsets` | loading audio (platform decoder for non-WAV) |
 | Tape or vinyl treatment for voice memos | `tapeWarble` / `vinylNoise` / `softSaturate` / `Wav` | recording and sharing |
 | Waveform and spectrum visualisation | `Fft` / `RealFftPlan` / `hanning` / `rfftFreq` | Canvas drawing |
 | Generated ambience, noise, sleep sounds | `Rng` / `sosfilt` / `resample` / `Wav` | playback only, no input |
@@ -68,18 +69,17 @@ println("$name$octave ${if (cents >= 0) "+" else ""}$cents cents")
 
 ### Tempo (BPM) estimation
 
-A simple version: the median gap between onsets.
+Autocorrelation of the onset strength envelope, with a prior around 120 BPM to settle the
+half-time / double-time ambiguity.
 
 ```kotlin
-val hop = 512
-val env = onsetStrength(y, sr, hopLength = hop)
-val onsets = pickOnsets(env, delta = 0.3f)          // onset frame indices
-if (onsets.size >= 2) {
-    val intervals = onsets.toList().zipWithNext { a, b -> (b - a) * hop / sr.toDouble() }
-    val bpm = 60.0 / median(intervals.toDoubleArray())
-    println("about ${bpm.roundToInt()} BPM")
-}
+val bpm = estimateTempo(y, sr) ?: return            // null for silence or too-short input
+println("about ${bpm.roundToInt()} BPM")
 ```
+
+`estimateTempo(y, sr, minBpm = 70.0, maxBpm = 140.0)` narrows the search when you know the
+material. If you already have the envelope — for drawing it, or for `pickOnsets` — pass it to
+`estimateTempoFromEnvelope(env, sr)` instead and the expensive half is not redone.
 
 ### Tape treatment for a voice memo
 
