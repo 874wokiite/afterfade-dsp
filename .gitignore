@@ -1,0 +1,13 @@
+*.iml
+.gradle
+.kotlin/
+build/
+local.properties
+.idea/
+.DS_Store
+gradle/gradle-daemon-jvm.properties
+xcuserdata/
+
+# Claude Code
+.claude/worktrees/
+.claude/settings.local.json
