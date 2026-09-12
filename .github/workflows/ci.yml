@@ -9,15 +9,17 @@ jobs:
     # macOS so the iOS simulator tests can run next to the JVM ones
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: JVM tests
         run: ./gradlew jvmTest --no-daemon
       - name: iOS simulator tests
         run: ./gradlew iosSimulatorArm64Test --no-daemon
       - name: Compile every target
         run: ./gradlew assemble --no-daemon
+      - name: Build the CLI sample
+        run: ./gradlew -p samples :cli:installDist --no-daemon
