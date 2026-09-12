@@ -21,8 +21,8 @@ the ticks are `pickOnsets`, and the caption comes from `estimateTempo` and `esti
 
 **In the browser.** The [playground](samples/playground/) runs the library as Kotlin/Wasm: drop a
 WAV to get its tempo, key and pitch, hear it with a tape treatment, or generate ambience from a seed.
-Run it locally with `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun`
-(a hosted copy is published with GitHub Pages once the repository is public).
+Open it at **[874wokiite.github.io/afterfade-dsp](https://874wokiite.github.io/afterfade-dsp/)**,
+or run it locally with `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun`.
 
 **From the command line.** No code to write; paths are relative to the repository root.
 

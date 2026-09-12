@@ -19,8 +19,8 @@ Kotlin Multiplatform 向けの純 Kotlin 音声 DSP ライブラリ。外部依�
 
 **ブラウザで。** [playground](samples/playground/) はこのライブラリを Kotlin/Wasm として動かします。
 WAV を落とすとテンポ・キー・ピッチが出て、テープ処理した音をその場で聴け、シードから環境音を生成できます。
-手元では `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun` で起動します
-（リポジトリ公開後は GitHub Pages に置きます）。
+**[874wokiite.github.io/afterfade-dsp](https://874wokiite.github.io/afterfade-dsp/)** で開けます。
+手元で動かすなら `./gradlew -p samples :playground:wasmJsBrowserDevelopmentRun` です。
 
 **コマンドラインで。** コードを書かずに試せます。パスはリポジトリ直下からの相対です。
 
