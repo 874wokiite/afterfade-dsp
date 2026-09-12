@@ -38,6 +38,12 @@
         </div>
         <p id="analyse-status" class="status">no file loaded yet</p>
 
+        <div class="actions">
+            <button id="orig-play" class="primary" type="button" disabled data-i18n="btn.play">Play</button>
+            <button id="orig-stop" type="button" data-i18n="btn.stop">Stop</button>
+            <span id="orig-status" class="status" data-i18n="status.loadfirst">load a WAV file first</span>
+        </div>
+
         <dl class="metrics">
             <div><dt data-i18n="metric.samplerate">Sample rate</dt><dd id="m-samplerate">—</dd></div>
             <div><dt data-i18n="metric.duration">Length</dt><dd id="m-duration">—</dd></div>
@@ -88,7 +94,8 @@
         </div>
 
         <div class="actions">
-            <button id="tape-play" class="primary" type="button" disabled data-i18n="btn.play">Play</button>
+            <button id="tape-play" class="primary" type="button" disabled data-i18n="btn.playTreated">Play treated</button>
+            <button id="tape-original" type="button" disabled data-i18n="btn.playOriginal">Original</button>
             <button id="tape-stop" type="button" data-i18n="btn.stop">Stop</button>
             <button id="tape-download" type="button" disabled data-i18n="btn.download">Download .wav</button>
             <span id="tape-status" class="status">load a WAV file first</span>

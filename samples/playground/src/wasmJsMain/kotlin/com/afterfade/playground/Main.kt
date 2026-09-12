@@ -70,6 +70,12 @@ private fun wireFileInput() {
 
     button("demo-load").addEventListener("click") { loadDemo() }
 
+    button("orig-play").addEventListener("click") { playOriginal("orig-status") }
+    button("orig-stop").addEventListener("click") {
+        stopPlayback()
+        status("orig-status", "status.stopped")
+    }
+
     val zone = el("drop-zone")
     zone.addEventListener("click") { picker.click() }
     zone.addEventListener("dragover") { event ->
@@ -159,8 +165,11 @@ private fun analyse(audio: WavAudio): Status {
     drawWaveform(canvas("canvas-wave"), samples)
     drawSpectrum(canvas("canvas-spectrum"), head, sr)
 
+    enable("orig-play", true)
     enable("tape-play", true)
+    enable("tape-original", true)
     enable("tape-download", true)
+    status("orig-status", "status.ready")
     val extra = if (result.truncated) t("status.truncated", "s" to "$ANALYSIS_SECONDS") else ""
     return st("status.loaded", "name" to "$loadedName.wav", "extra" to extra)
 }
@@ -183,6 +192,18 @@ private fun renderMetrics() {
     )
     show("m-rms", t("value.rms", "rms" to fmt(a.rms.toDouble(), 4), "peak" to fmt(a.peak.toDouble(), 3)))
     show("m-centroid", t("value.hz", "hz" to fmt(a.centroid, 0)))
+}
+
+/** Plays the loaded file untouched, so the treated version has something to be compared with. */
+private fun playOriginal(statusId: String) {
+    val audio = loaded
+    if (audio == null) {
+        status(statusId, "status.loadfirst")
+        return
+    }
+    stopPlayback()
+    playSamples(audio.samples, audio.sampleRate)
+    status(statusId, "status.playingOriginal", "s" to fmt(audio.samples.size.toDouble() / audio.sampleRate, 2))
 }
 
 // --- Tape treatment ------------------------------------------------------------------------------
@@ -210,6 +231,8 @@ private fun wireTape() {
         }
     }
 
+    button("tape-original").addEventListener("click") { playOriginal("tape-status") }
+
     button("tape-stop").addEventListener("click") {
         stopPlayback()
         status("tape-status", "status.stopped")
@@ -229,6 +252,7 @@ private fun wireTape() {
     }
 
     enable("tape-play", false)
+    enable("tape-original", false)
     enable("tape-download", false)
 }
 
