@@ -22,7 +22,14 @@ private val SCALE_INTERVALS = mapOf(
     "minor" to listOf(0, 2, 3, 5, 7, 8, 10),
 )
 
-internal fun hzToMidi(hz: Double): Double = 69.0 + 12.0 * log2(hz / 440.0)
+/**
+ * `hz_to_midi` — frequency in Hz as a fractional MIDI note number (A440 = 69).
+ *
+ * The value is not rounded, so the fractional part is the distance from the nearest semitone:
+ * `(midi - round(midi)) * 100` is the offset in cents, which is what a tuner display needs.
+ * Use [hzToNote] instead when you want the note name and octave.
+ */
+fun hzToMidi(hz: Double): Double = 69.0 + 12.0 * log2(hz / 440.0)
 
 /**
  * `_yin_pitch` — fundamental frequency of a single frame, or null when unpitched.
@@ -220,6 +227,23 @@ fun phaseVocoder(y: FloatArray, rate: Double, nFft: Int, hop: Int): FloatArray {
     val expectedLen = rint(y.size / rate).toInt()
     val finalLen = if (trimmed.size >= expectedLen) expectedLen else trimmed.size
     return FloatArray(finalLen) { trimmed[it].toFloat() }
+}
+
+/**
+ * Change the duration of [y] without changing its pitch, following librosa's `time_stretch`
+ * convention: [rate] is a speed factor, so `2.0` plays twice as fast and returns about half as
+ * many samples, `0.5` plays half as fast and returns about twice as many. `1.0` returns [y].
+ *
+ * This is [phaseVocoder] with the frame size [pitchShift] uses (hop = `nFft / 4`); [pitchShift] is
+ * the same stretch followed by a resample back to the original length, which moves the pitch.
+ *
+ * The overlap-add leaves a roughly constant gain on the result, so normalise ([peakNormalized])
+ * if the stretched audio has to sit at the same level as the input.
+ */
+fun timeStretch(y: FloatArray, rate: Double, nFft: Int = 2048): FloatArray {
+    require(rate > 0.0) { "rate must be positive, got $rate" }
+    if (rate == 1.0 || y.size < 2) return y
+    return phaseVocoder(y, rate, nFft, nFft / 4)
 }
 
 /**

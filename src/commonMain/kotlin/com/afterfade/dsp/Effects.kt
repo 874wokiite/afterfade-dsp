@@ -44,10 +44,19 @@ fun tapeWarble(y: FloatArray, sr: Int, depth: Double = 0.002, rateHz: Double = 0
  *
  * [raw] is a test seam: pass pre-generated noise for deterministic comparison.
  * When null the engine's own seeded RNG is used.
+ *
+ * [seed] picks which noise comes out. The same seed gives the same samples on every platform, and
+ * the default (42) is the seed the Python engine used, so calls that leave it alone are unchanged.
  */
-fun vinylNoise(length: Int, sr: Int, amplitude: Double = 0.005, raw: FloatArray? = null): FloatArray {
+fun vinylNoise(
+    length: Int,
+    sr: Int,
+    amplitude: Double = 0.005,
+    raw: FloatArray? = null,
+    seed: Long = VINYL_SEED,
+): FloatArray {
     if (length <= 0) return FloatArray(0)
-    val noise = raw ?: Rng(VINYL_SEED).gaussianNoise(length, amplitude)
+    val noise = raw ?: Rng(seed).gaussianNoise(length, amplitude)
     require(noise.size == length) { "vinyl noise length ${noise.size} != $length" }
     return sosfilt(SosFilters.BANDPASS_200_4000_HZ, noise)
 }

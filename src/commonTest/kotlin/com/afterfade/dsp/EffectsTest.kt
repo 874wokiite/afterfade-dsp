@@ -3,6 +3,7 @@ package com.afterfade.dsp
 import kotlin.math.tanh
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class EffectsTest {
@@ -27,6 +28,22 @@ class EffectsTest {
         assertTrue(
             vinylNoise(4096, sr).contentEquals(vinylNoise(4096, sr)),
             "the seeded RNG must produce the same noise every time",
+        )
+    }
+
+    @Test
+    fun vinylNoiseDefaultSeedIs42() {
+        assertTrue(
+            vinylNoise(4096, sr).contentEquals(vinylNoise(4096, sr, seed = 42L)),
+            "the default seed must keep the output byte-identical to the old behaviour",
+        )
+    }
+
+    @Test
+    fun vinylNoiseDiffersForAnotherSeed() {
+        assertFalse(
+            vinylNoise(4096, sr).contentEquals(vinylNoise(4096, sr, seed = 7L)),
+            "a different seed must give different noise",
         )
     }
 }

@@ -25,9 +25,10 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 
 | Area | Functions |
 | --- | --- |
-| Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
-| Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
+| Pitch | `yinPitch`, `estimatePitch`, `hzToNote`, `hzToMidi`, `nearestScaleSemitones`, `semitoneRatio` |
+| Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey`, `timeStretch` |
 | Onsets / transients | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
+| Features | `rms`, `zeroCrossingRate`, `spectralCentroid` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
 | Filters | `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
@@ -188,7 +189,6 @@ fun process(wavBytes: ByteArray): ByteArray {
 - **WAV only.** No MP3 or AAC decoding. Use the platform decoder to get PCM first.
 - **Shaped by one product.** Keys are strings (`"C"`, `"major"`), and names such as `extractBed`
   come from Afterfade's own pipeline.
-- **`vinylNoise` uses a fixed seed** (42), so two calls return the same noise.
 - **Filters are fixed tables.** `SosFilters` holds a handful of sections designed for 44.1 kHz.
   A filter design function is the first planned addition.
 - KDoc mixes English and Japanese.

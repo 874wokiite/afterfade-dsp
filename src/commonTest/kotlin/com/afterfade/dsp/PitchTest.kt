@@ -64,6 +64,32 @@ class PitchTest {
     }
 
     @Test
+    fun timeStretchChangesTheLengthByTheRate() {
+        val y = sine(440.0, sr)
+        assertEquals(y.size, timeStretch(y, 1.0).size, "rate 1.0 must keep the length")
+        for (rate in listOf(0.5, 0.8, 1.25, 2.0)) {
+            val expected = (y.size / rate).toInt()
+            val got = timeStretch(y, rate).size
+            assertTrue(
+                kotlin.math.abs(got - expected) <= 2,
+                "rate $rate gave $got samples, expected about $expected",
+            )
+        }
+    }
+
+    @Test
+    fun timeStretchKeepsThePitch() {
+        val y = sine(440.0, sr)
+        for (rate in listOf(0.8, 1.25)) {
+            val f0 = assertNotNull(estimatePitch(timeStretch(y, rate), sr), "no pitch at rate $rate")
+            assertEquals(440.0, f0, 5.0, "rate $rate moved the pitch")
+        }
+    }
+
+    private fun sine(hz: Double, n: Int) =
+        FloatArray(n) { (0.5 * kotlin.math.sin(2.0 * kotlin.math.PI * hz * it / sr)).toFloat() }
+
+    @Test
     fun nearestScaleSemitonesIsZeroForInScaleNotes() {
         // A440 is the 6th degree of C major and the root of A minor — no shift needed either way.
         assertEquals(0, nearestScaleSemitones(440.0, "C", "major"))

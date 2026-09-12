@@ -24,9 +24,10 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 
 | 領域 | 関数 |
 | --- | --- |
-| ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `nearestScaleSemitones`, `semitoneRatio` |
-| ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
+| ピッチ推定 | `yinPitch`, `estimatePitch`, `hzToNote`, `hzToMidi`, `nearestScaleSemitones`, `semitoneRatio` |
+| ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey`, `timeStretch` |
 | オンセット / トランジェント | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
+| 特徴量 | `rms`, `zeroCrossingRate`, `spectralCentroid` |
 | エフェクト | `tapeWarble`, `vinylNoise`, `softSaturate` |
 | フィルタ | `SosFilters`（44.1 kHz 用に設計済みの Butterworth セクション）, `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
@@ -185,7 +186,6 @@ fun process(wavBytes: ByteArray): ByteArray {
 - **WAV しか読めない。** MP3 / AAC のデコードはありません。先に OS のデコーダで PCM にしてください
 - **一つの製品の都合で形が決まっている。** キーは文字列（`"C"`, `"major"`）で受け、`extractBed` のように
   Afterfade のパイプライン由来の名前が残っています
-- **`vinylNoise` のシードが固定**（42）なので、2回呼ぶと同じノイズが返ります
 - **フィルタは決め打ちの係数表。** `SosFilters` は 44.1 kHz 用に設計した数本だけです。
   フィルタ設計関数を最初の追加機能として予定しています
 - KDoc は英語と日本語が混ざっています
