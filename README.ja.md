@@ -11,7 +11,8 @@ Kotlin Multiplatform 向けの純 Kotlin 音声 DSP ライブラリ。外部依�
 スペクトログラムは `RealFftPlan` で描き、目盛りは `pickOnsets`、右上の文字は `estimateTempo` と `estimateKey` の出力です。*
 
 > **[Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416) の本番音声エンジンから、ロジックを変えずに切り出したものです。**
-> Afterfade は、その日の音を端末内だけでローファイトラックに変えるアプリで、iOS と Android で今日動いています。
+> Afterfade は、その日の音を端末内だけでローファイトラックに変えるアプリで、
+> [iOS](https://apps.apple.com/us/app/afterfade/id6800247416) と [Android](https://play.google.com/store/apps/details?id=com.afterfade.app) で今日動いています。
 > このライブラリはそのエンジンのうち Afterfade 固有でない部分です。数秒の音声を共有 Kotlin コードで
 > オフライン処理するために作られており、低レイテンシのライブエフェクトは対象外です。
 

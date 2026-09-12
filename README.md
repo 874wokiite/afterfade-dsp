@@ -13,7 +13,8 @@ the ticks are `pickOnsets`, and the caption comes from `estimateTempo` and `esti
 
 > **Extracted unchanged from [Afterfade](https://apps.apple.com/us/app/afterfade/id6800247416)'s
 > production audio engine.** Afterfade turns the sounds of your day into a lo-fi track, entirely on
-> the device, on iOS and Android today. This library is the part of that engine that is not
+> the device, on [iOS](https://apps.apple.com/us/app/afterfade/id6800247416) and
+> [Android](https://play.google.com/store/apps/details?id=com.afterfade.app) today. This library is the part of that engine that is not
 > Afterfade-specific. Built for offline processing of a few seconds of audio in shared Kotlin code,
 > not for low-latency live effects.
 
