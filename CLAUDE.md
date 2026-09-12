@@ -38,10 +38,11 @@ and stays in the app.** Do not add master chains, templates or cassette-specific
   simulator. Do not add a JVM-only test source set.
 - **API visibility.** The app can only use `public` symbols. If the app needs an `internal`
   function, make it public here with KDoc (precedent: `semitoneRatio`).
-- **New general-purpose parts start in the app.** Bit crushing, square waves, filter design and
-  the like are written in the app's `engine/` first, then moved here once the cassette that uses
-  them has shipped and stabilised. Moving is a copy plus package rename; the app then only swaps
-  imports.
+- **Parts the app needs start in the app.** Bit crushing, square waves and the like that a new
+  cassette depends on are written in the app's `engine/` first, then moved here once that cassette
+  has shipped and stabilised. Moving is a copy plus package rename; the app then only swaps
+  imports. Features the app does not use (filter design, tempo, key estimation, features) can be
+  added here directly, as long as no existing function's output changes.
 - This repo is public. No keys, no cassette numbers, no templates.
 
 ## Build and test
