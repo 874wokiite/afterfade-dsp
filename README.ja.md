@@ -28,7 +28,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | ピッチシフト | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | オンセット / トランジェント | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | エフェクト | `tapeWarble`, `vinylNoise`, `softSaturate` |
-| フィルタ | `SosFilters`（44.1 kHz 用に設計済みの Butterworth セクション）, `sosfilt` |
+| フィルタ | `butterworth`, `butterworthBandpass`, `SosFilters`（44.1 kHz 用に設計済みの Butterworth セクション）, `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
 | リサンプル | `resample`, `resampleTo` |
 | 乱数 | `Rng`（シード付き。全プラットフォームでビット一致） |
@@ -82,7 +82,7 @@ if (onsets.size >= 2) {
 ### ボイスメモをテープ風にする
 
 順番と量は自由です。以下は一例で、Afterfade 本体のマスターチェーンとは別の値にしてあります。
-`SosFilters` の係数は 44.1 kHz 用なので、他のレートの音声は先に `resampleTo` で合わせてください。
+`SosFilters` の係数は 44.1 kHz 用です。他のレートなら `butterworth(4, 12000.0, sr)` でその場で設計できます。
 
 ```kotlin
 val audio = Wav.decode(bytes)
@@ -186,8 +186,6 @@ fun process(wavBytes: ByteArray): ByteArray {
 - **一つの製品の都合で形が決まっている。** キーは文字列（`"C"`, `"major"`）で受け、`extractBed` のように
   Afterfade のパイプライン由来の名前が残っています
 - **`vinylNoise` のシードが固定**（42）なので、2回呼ぶと同じノイズが返ります
-- **フィルタは決め打ちの係数表。** `SosFilters` は 44.1 kHz 用に設計した数本だけです。
-  フィルタ設計関数を最初の追加機能として予定しています
 - KDoc は英語と日本語が混ざっています
 
 ## Afterfade との関係

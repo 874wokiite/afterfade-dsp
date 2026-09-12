@@ -29,7 +29,7 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 | Pitch shifting | `phaseVocoder`, `pitchShift`, `pitchShiftToKey` |
 | Onsets / transients | `melFilterbank`, `onsetStrength`, `pickOnsets`, `detectTransients`, `extractBed` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
-| Filters | `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
+| Filters | `butterworth`, `butterworthBandpass`, `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
 | Resampling | `resample`, `resampleTo` |
 | Random | `Rng` (seeded, bit-identical on every platform) |
@@ -84,8 +84,8 @@ if (onsets.size >= 2) {
 ### Tape treatment for a voice memo
 
 Order and amounts are yours to choose. This is one example, deliberately different from
-Afterfade's own master chain. `SosFilters` coefficients are designed for 44.1 kHz, so run other
-rates through `resampleTo` first.
+Afterfade's own master chain. The `SosFilters` coefficients are designed for 44.1 kHz; for any
+other rate, design the filter yourself with `butterworth(4, 12000.0, sr)`.
 
 ```kotlin
 val audio = Wav.decode(bytes)
@@ -189,8 +189,6 @@ fun process(wavBytes: ByteArray): ByteArray {
 - **Shaped by one product.** Keys are strings (`"C"`, `"major"`), and names such as `extractBed`
   come from Afterfade's own pipeline.
 - **`vinylNoise` uses a fixed seed** (42), so two calls return the same noise.
-- **Filters are fixed tables.** `SosFilters` holds a handful of sections designed for 44.1 kHz.
-  A filter design function is the first planned addition.
 - KDoc mixes English and Japanese.
 
 ## Relation to Afterfade
