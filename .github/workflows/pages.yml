@@ -1,15 +1,15 @@
 name: Playground
 
 # Builds the Kotlin/Wasm playground under samples/playground and publishes it with GitHub Pages.
-# Enable Pages once in the repository settings with "Source: GitHub Actions", then this runs on
-# every push to main that touches the library or the playground, or by hand.
+#
+# Manual only for now: the deploy job needs Pages enabled in the repository settings
+# ("Source: GitHub Actions"), which a private repository on the free plan cannot do. Once the
+# repository is public and Pages is enabled, add a push trigger here:
+#
+#   push:
+#     branches: [main]
+#     paths: ["src/**", "samples/playground/**", ".github/workflows/pages.yml"]
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "samples/playground/**"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
