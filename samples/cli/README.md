@@ -32,6 +32,7 @@ samples/cli/build/install/afdsp/bin/afdsp info docs/demo.wav
 | `tape <in.wav> <out.wav>` | lowpass, `tapeWarble`, `softSaturate`, `vinylNoise` |
 | `ambience <out.wav>` | `Rng` + `butterworth` + `sosfilt`, no input at all |
 | `demo <out.wav>` | the deterministic 8-second demo track |
+| `beat <boombap\|hyperpop> <out.wav>` | a 90-second synthesised track: `oscillator`, `supersaw`, `adsr`, `stepPositions`, `sidechainDuck`, `filterSweep`, `schroederReverb` |
 | `plot <in.wav> <out.png>` | spectrogram, onset envelope, onsets, tempo and key |
 
 ### info
@@ -92,6 +93,25 @@ and clap pattern at 96 BPM, and a sustained D minor triad, all built from librar
 
 ```sh
 ./gradlew -p samples :cli:run --args="demo docs/demo.wav"
+```
+
+### beat
+
+Two full tracks, about a minute and a half each, built only from library parts.
+
+- `boombap`: 90 BPM in C minor. Intro (filter opening), verse, hook, verse, hook, outro, with
+  swung hats, Rhodes-like chords, a bell lead with echo, drum breaks for the rapper, tape and
+  vinyl.
+- `hyperpop`: 160 BPM in E major. Intro, verse, build, drop, verse, build, drop, bridge, drop,
+  outro. Supersaw stabs pumping against the kick, a gliding distorted 808, crushed chip arps in
+  the verses, snare-roll builds with a noise riser and reversed crash, a reverb bridge and a
+  clipped master.
+
+The drum sounds, progressions and song forms live in `Beats.kt`, not in the library.
+
+```sh
+./gradlew -p samples :cli:run --args="beat boombap boombap.wav"     # about 90 BPM
+./gradlew -p samples :cli:run --args="beat hyperpop hyperpop.wav"   # about 80 BPM (the half-time verses pull the estimate down an octave)
 ```
 
 ### plot

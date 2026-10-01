@@ -67,6 +67,12 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | テンポ | `estimateTempo`, `estimateTempoFromEnvelope` |
 | 特徴量 | `rms`, `zeroCrossingRate`, `spectralCentroid` |
 | エフェクト | `tapeWarble`, `vinylNoise`, `softSaturate` |
+| 合成 | `oscillator`（`Waveform.SINE`、帯域制限付きの `Waveform.SAW`、`Waveform.PULSE`）, `supersaw`, `expSweep`, `glide`, `midiToHz` |
+| チップ音源 | `pulse`, `steppedTriangle`, `lfsrNoise`, `bitCrush`, `sampleHold` |
+| エンベロープ | `adsr`, `expDecay`, `applyEnvelope` |
+| シーケンス | `stepPositions`（スウィング付き）, `parsePattern` |
+| ダイナミクス | `gain`, `mix`, `hardClip`, `compressor`, `sidechainDuck` |
+| 曲構成 | `fade`, `reverse`, `feedbackDelay`, `filterSweep`, `schroederReverb` |
 | フィルタ | `butterworth`, `butterworthBandpass`, `SosFilters`（44.1 kHz 用に設計済みの Butterworth セクション）, `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
 | リサンプル | `resample`, `resampleTo` |
@@ -88,6 +94,7 @@ KMP の共有コードに音声解析・加工を置きたいとき、今ある�
 | テンポ（BPM）推定、ビート同期の演出 | `estimateTempo` / `onsetStrength` / `pickOnsets` | 音源の読み込み（WAV 以外は OS のデコーダ） |
 | ボイスメモをテープ風・レコード風にする | `tapeWarble` / `vinylNoise` / `softSaturate` / `Wav` | 録音と共有 |
 | 波形・スペクトルの可視化 | `Fft` / `RealFftPlan` / `hanning` / `rfftFreq` | Canvas 描画 |
+| ビートやループ（ドラム・ベース・コードスタブ） | `oscillator` / `adsr` / `stepPositions` / `sidechainDuck` / `compressor` | パターン・音色・曲構成 |
 | 環境音・ノイズ・睡眠音の生成 | `Rng` / `sosfilt` / `resample` / `Wav` | 再生だけ（入力は不要） |
 | 環境音から素材を切り出して曲にする（Afterfade 本体） | `detectTransients` / `pitchShiftToKey` / `extractBed` | 曲を組み立てるレシピ |
 
@@ -167,6 +174,21 @@ val sr = 44100
 val noise = Rng(7L).gaussianNoise(sr * 10, 0.2)     // 10 秒の白色ノイズ
 val bed = sosfilt(SosFilters.LOWPASS_800_HZ, noise) // 低域だけ残して風のような音に
 val out = Wav.encodePcm16(peakNormalized(bed, 0.5f), sr)
+```
+
+### ビートを合成する
+
+オシレーター・エンベロープ・ステップのグリッド・サイドチェインがあればドラムループが組めます。
+サンプル CLI の `beat` コマンドは、この方法でブーンバップとハイパーポップを1分半ずつ書き出します。
+イントロ・ビルド・ドロップ・アウトロまで組んであります（`samples/cli/.../Beats.kt`）。
+
+```kotlin
+val sr = 44100
+val grid = stepPositions(bpm = 90.0, sr = sr, steps = 16, swing = 0.58)
+val n = sr / 2
+val kick = applyEnvelope(oscillator(expSweep(160.0, 48.0, 28.0, n, sr), sr), expDecay(n, sr, 7.0))
+val out = FloatArray(grid.last() + n)
+parsePattern("x... .... ..x. x...").forEachIndexed { i, hit -> if (hit) addAt(out, kick, grid[i]) }
 ```
 
 ## ターゲット

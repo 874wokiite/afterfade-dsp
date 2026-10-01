@@ -33,6 +33,7 @@ Usage:
   ambience <out.wav> [--seed N] [--seconds S] [--cutoff HZ]
                                                        filtered noise, no input at all
   demo     <out.wav>                                   generate the deterministic demo track
+  beat     <boombap|hyperpop> <out.wav>                synthesised beat from the synth building blocks
   plot     <in.wav> <out.png>                          spectrogram + onsets + caption
 """
 
@@ -53,6 +54,7 @@ object Main {
                 "tape" -> tape(args)
                 "ambience" -> ambience(args)
                 "demo" -> demo(need(args, 1, "demo <out.wav>"))
+                "beat" -> beat(need(args, 1, "beat <boombap|hyperpop> <out.wav>"), need(args, 2, "beat <boombap|hyperpop> <out.wav>"))
                 "plot" -> plot(need(args, 1, "plot <in.wav> <out.png>"), need(args, 2, "plot <in.wav> <out.png>"))
                 "help", "--help", "-h" -> println(USAGE)
                 else -> fail("unknown command '$command'\n\n$USAGE")
@@ -162,6 +164,19 @@ object Main {
         val file = File(path)
         if (!file.isFile) fail("no such file: $path")
         return Wav.decode(file.readBytes())
+    }
+
+    private fun beat(style: String, outPath: String) {
+        val track = when (style) {
+            "boombap" -> Beats.boomBap()
+            "hyperpop" -> Beats.hyperpop()
+            else -> fail("unknown beat '$style', expected boombap or hyperpop")
+        }
+        write(outPath, Wav.encodePcm16(track.samples, track.sampleRate))
+        println("wrote $outPath — ${fmt(track.samples.size.toDouble() / track.sampleRate, 2)} s at ${track.sampleRate} Hz")
+        val bpm = estimateTempo(track.samples, track.sampleRate)
+        val k = estimateKey(track.samples, track.sampleRate)
+        println("  ${if (bpm == null) "no clear tempo" else "about ${bpm.roundToInt()} BPM"}, ${k?.let { "${it.tonic} ${it.scale}" } ?: "no clear key"}")
     }
 
     private fun write(path: String, bytes: ByteArray) {
