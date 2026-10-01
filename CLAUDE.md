@@ -59,6 +59,6 @@ and stays in the app.** Do not add master chains, templates or cassette-specific
 CI runs on pull requests and manual dispatch only. A Claude Code hook in `.claude/settings.json`
 runs `jvmTest` before any `git push` from Claude and blocks the push on failure.
 
-Not on Maven Central yet. `group = "io.github.874wokiite"`, `version = "0.1.1"` are the
+Not on Maven Central yet. `group = "io.github.874wokiite"`, `version = "0.2.0"` are the
 coordinates the app's `includeBuild` substitutes; the artifact is always the sibling checkout's
 HEAD.
