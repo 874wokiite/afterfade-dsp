@@ -70,6 +70,12 @@ output on every target thanks to a seeded RNG and a self-contained FFT.
 | Tempo | `estimateTempo`, `estimateTempoFromEnvelope` |
 | Features | `rms`, `zeroCrossingRate`, `spectralCentroid` |
 | Effects | `tapeWarble`, `vinylNoise`, `softSaturate` |
+| Synthesis | `oscillator` (`Waveform.SINE`, band-limited `Waveform.SAW`, `Waveform.PULSE`), `supersaw`, `expSweep`, `glide`, `midiToHz` |
+| Chip | `pulse`, `steppedTriangle`, `lfsrNoise`, `bitCrush`, `sampleHold` |
+| Envelopes | `adsr`, `expDecay`, `applyEnvelope` |
+| Sequencing | `stepPositions` (with swing), `parsePattern` |
+| Dynamics | `gain`, `mix`, `hardClip`, `compressor`, `sidechainDuck` |
+| Arrangement | `fade`, `reverse`, `feedbackDelay`, `filterSweep`, `schroederReverb` |
 | Filters | `butterworth`, `butterworthBandpass`, `SosFilters` (fixed Butterworth sections at 44.1 kHz), `sosfilt` |
 | FFT | `Radix2Fft`, `RealFftPlan`, `Fft`, `rfftFreq` |
 | Resampling | `resample`, `resampleTo` |
@@ -92,6 +98,7 @@ and out (playback, drawing, sharing).
 | Tempo (BPM) estimation, beat-synced visuals | `estimateTempo` / `onsetStrength` / `pickOnsets` | loading audio (platform decoder for non-WAV) |
 | Tape or vinyl treatment for voice memos | `tapeWarble` / `vinylNoise` / `softSaturate` / `Wav` | recording and sharing |
 | Waveform and spectrum visualisation | `Fft` / `RealFftPlan` / `hanning` / `rfftFreq` | Canvas drawing |
+| Beats and loops: drums, basses, chord stabs | `oscillator` / `adsr` / `stepPositions` / `sidechainDuck` / `compressor` | the patterns, sounds and arrangement |
 | Generated ambience, noise, sleep sounds | `Rng` / `sosfilt` / `resample` / `Wav` | playback only, no input |
 | Slicing ambient recordings into musical material (Afterfade itself) | `detectTransients` / `pitchShiftToKey` / `extractBed` | a recipe that assembles a track |
 
@@ -172,6 +179,21 @@ val sr = 44100
 val noise = Rng(7L).gaussianNoise(sr * 10, 0.2)     // 10 s of white noise
 val bed = sosfilt(SosFilters.LOWPASS_800_HZ, noise) // keep the low end: wind-like
 val out = Wav.encodePcm16(peakNormalized(bed, 0.5f), sr)
+```
+
+### Synthesised beats
+
+Oscillators, envelopes, a step grid and sidechain ducking are enough for a drum loop. The sample
+CLI's `beat` command renders a minute-and-a-half boom bap and hyperpop track this way, with
+intros, builds, drops and outros (`samples/cli/.../Beats.kt`).
+
+```kotlin
+val sr = 44100
+val grid = stepPositions(bpm = 90.0, sr = sr, steps = 16, swing = 0.58)
+val n = sr / 2
+val kick = applyEnvelope(oscillator(expSweep(160.0, 48.0, 28.0, n, sr), sr), expDecay(n, sr, 7.0))
+val out = FloatArray(grid.last() + n)
+parsePattern("x... .... ..x. x...").forEachIndexed { i, hit -> if (hit) addAt(out, kick, grid[i]) }
 ```
 
 ## Targets

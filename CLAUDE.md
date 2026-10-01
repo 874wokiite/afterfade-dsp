@@ -11,7 +11,10 @@ may reference the app.
 
 **What lives where.** This library holds *mechanisms*: FFT, SOS filters, resampling, the seeded
 RNG, YIN and phase vocoder (`Pitch.kt`), mel/onset detection (`Transient.kt`), `tapeWarble` /
-`vinylNoise` / `softSaturate` (`Effects.kt`) and WAV I/O. The app keeps *recipes*: chord
+`vinylNoise` / `softSaturate` (`Effects.kt`), synthesis building blocks (`Oscillator.kt`,
+`Envelope.kt`, `Sequencer.kt`, `Dynamics.kt`, `Arrange.kt`), the chip waveforms and
+`bitCrush` / `sampleHold` moved from the 8bit cassette (`Chip.kt`), `schroederReverb`
+(`Reverb.kt`) and WAV I/O. The app keeps *recipes*: chord
 templates, tone synthesis, drum kits, and the master chains (`lofiMaster`, `nightMaster` in the
 app's `cassette/Masters.kt`).
 
