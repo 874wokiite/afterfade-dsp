@@ -9,7 +9,7 @@ kotlin {
 }
 
 dependencies {
-    implementation("io.github.874wokiite:afterfade-dsp:0.1.0")
+    implementation("io.github.874wokiite:afterfade-dsp:0.1.1")
 }
 
 application {
