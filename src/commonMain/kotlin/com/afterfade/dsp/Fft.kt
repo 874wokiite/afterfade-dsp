@@ -1,5 +1,6 @@
 package com.afterfade.dsp
 
+import kotlin.concurrent.Volatile
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -21,55 +22,46 @@ class Spectrum(val re: DoubleArray, val im: DoubleArray) {
 
 /** Reusable power-of-two FFT plan (twiddle factors are computed once). */
 class Radix2Fft(val n: Int) {
-    private val levels: Int
     private val cosTable: DoubleArray
     private val sinTable: DoubleArray
 
     init {
         require(n > 0 && (n and (n - 1)) == 0) { "Radix2Fft size must be a power of two, got $n" }
-        var bits = 0
-        while ((1 shl bits) < n) bits++
-        levels = bits
         val half = n / 2
         cosTable = DoubleArray(half) { cos(2.0 * PI * it / n) }
         sinTable = DoubleArray(half) { sin(2.0 * PI * it / n) }
     }
 
-    /** In-place forward DFT (negative exponent, unnormalized). */
+    /**
+     * In-place forward DFT (negative exponent, unnormalized).
+     *
+     * The result is bit-for-bit the textbook iterative radix-2 transform (bit-reverse, then one pass
+     * per stage). Only the *order* in which butterflies run differs: the stages that fit inside a
+     * [CACHE_BLOCK]-sized block are run block by block, so a long transform walks the arrays once
+     * for those stages instead of once per stage. A butterfly's inputs come from its own block in
+     * the previous stage, so every butterfly still sees exactly the same operands and the same
+     * twiddle, and the rounding is unchanged. Bluestein on a whole track (2^21 points) is where
+     * this matters.
+     */
     fun forward(re: DoubleArray, im: DoubleArray) {
         require(re.size == n && im.size == n) { "expected arrays of length $n" }
         if (n == 1) return
 
-        for (i in 0 until n) {
-            val j = reverseBits(i, levels)
-            if (j > i) {
-                var t = re[i]; re[i] = re[j]; re[j] = t
-                t = im[i]; im[i] = im[j]; im[j] = t
-            }
-        }
+        bitReverse(re, im)
 
-        var size = 2
-        while (size <= n) {
-            val halfSize = size / 2
-            val tableStep = n / size
-            var i = 0
-            while (i < n) {
-                var j = i
-                var k = 0
-                while (j < i + halfSize) {
-                    val l = j + halfSize
-                    val tpre = re[l] * cosTable[k] + im[l] * sinTable[k]
-                    val tpim = -re[l] * sinTable[k] + im[l] * cosTable[k]
-                    re[l] = re[j] - tpre
-                    im[l] = im[j] - tpim
-                    re[j] += tpre
-                    im[j] += tpim
-                    j++
-                    k += tableStep
-                }
-                i += size
+        val block = minOf(n, CACHE_BLOCK)
+        var start = 0
+        while (start < n) {
+            var size = 2
+            while (size <= block) {
+                stage(re, im, size, start, start + block)
+                size *= 2
             }
-            if (size == n) break
+            start += block
+        }
+        var size = block * 2
+        while (size <= n) {
+            stage(re, im, size, 0, n)
             size *= 2
         }
     }
@@ -77,25 +69,93 @@ class Radix2Fft(val n: Int) {
     /** In-place inverse DFT (positive exponent), **unnormalized** — divide by [n] yourself. */
     fun inverse(re: DoubleArray, im: DoubleArray) = forward(im, re)
 
-    private fun reverseBits(value: Int, width: Int): Int {
-        var result = 0
-        var v = value
-        for (i in 0 until width) {
-            result = (result shl 1) or (v and 1)
-            v = v shr 1
+    /** One radix-2 stage of butterfly width [size], over the blocks in `from until to`. */
+    private fun stage(re: DoubleArray, im: DoubleArray, size: Int, from: Int, to: Int) {
+        val halfSize = size / 2
+        val tableStep = n / size
+        // Each operand is read once into a local. The expressions are the textbook ones term for
+        // term (`re[j] += t` is `re[j] = re[j] + t`), so the rounding is identical; this only saves
+        // the repeated array and field loads, which a debuggable ART does not hoist on its own.
+        val cosT = cosTable
+        val sinT = sinTable
+        var i = from
+        while (i < to) {
+            var j = i
+            var k = 0
+            val end = i + halfSize
+            while (j < end) {
+                val l = j + halfSize
+                val c = cosT[k]
+                val s = sinT[k]
+                val xr = re[l]
+                val xi = im[l]
+                val tpre = xr * c + xi * s
+                val tpim = -xr * s + xi * c
+                val yr = re[j]
+                val yi = im[j]
+                re[l] = yr - tpre
+                im[l] = yi - tpim
+                re[j] = yr + tpre
+                im[j] = yi + tpim
+                j++
+                k += tableStep
+            }
+            i += size
         }
-        return result
+    }
+
+    /**
+     * The bit-reversal permutation, walking the reversed index incrementally instead of reversing
+     * every index bit by bit (log2 n steps each). Same permutation, a fraction of the work.
+     */
+    private fun bitReverse(re: DoubleArray, im: DoubleArray) {
+        var j = 0
+        for (i in 0 until n - 1) {
+            if (j > i) {
+                var t = re[i]; re[i] = re[j]; re[j] = t
+                t = im[i]; im[i] = im[j]; im[j] = t
+            }
+            var bit = n shr 1
+            while (j and bit != 0) {
+                j = j xor bit
+                bit = bit shr 1
+            }
+            j = j or bit
+        }
+    }
+
+    private companion object {
+        /** 4096 complex points = 64 KB of re + im, which stays in L1/L2 on phones and desktops. */
+        const val CACHE_BLOCK = 4096
     }
 }
 
 object Fft {
 
-    private val planCache = HashMap<Int, Radix2Fft>(16)
+    /**
+     * Plans by size, replaced wholesale on every insert (copy-on-write) and never mutated in place.
+     *
+     * Callers run transforms from several threads at once (Afterfade pitch-shifts accents in
+     * parallel), and a plain `HashMap` written concurrently can corrupt itself. Two threads that
+     * miss the same size at once each build a plan and one insert is lost — harmless, since the
+     * tables are identical — but no reader ever sees a half-written map.
+     */
+    @Volatile
+    private var planCache: Map<Int, Radix2Fft> = emptyMap()
+
+    /**
+     * Largest plan kept for the life of the process. STFT frames and the resample of a short clip
+     * reuse their plans constantly, so those stay. Bluestein over a whole track needs 2^21 points,
+     * whose twiddle tables alone are 16 MB; keeping that around for good would hold it on a phone
+     * heap long after the one transform that needed it. Larger plans are built per call (one
+     * Bluestein reuses its plan for all three of its transforms) and left to the GC.
+     */
+    private const val MAX_CACHED_PLAN = 1 shl 19
 
     internal fun cachedPlan(n: Int): Radix2Fft {
         planCache[n]?.let { return it }
         val plan = Radix2Fft(n)
-        planCache[n] = plan
+        if (n <= MAX_CACHED_PLAN) planCache = planCache + (n to plan)
         return plan
     }
 
@@ -111,17 +171,19 @@ object Fft {
     fun inverse(re: DoubleArray, im: DoubleArray) = forward(im, re)
 
     /** `np.fft.rfft(x)` — returns bins `0..n/2`. */
-    fun rfft(x: DoubleArray): Spectrum {
-        val n = x.size
-        val re = x.copyOf()
+    fun rfft(x: DoubleArray): Spectrum = rfftInPlace(x.copyOf())
+
+    /** `np.fft.rfft(x)` for a float32 signal (widened to float64 first, like numpy does). */
+    fun rfft(x: FloatArray): Spectrum = rfftInPlace(DoubleArray(x.size) { x[it].toDouble() })
+
+    /** [rfft] that transforms [re] itself — the caller hands over a copy it no longer needs. */
+    private fun rfftInPlace(re: DoubleArray): Spectrum {
+        val n = re.size
         val im = DoubleArray(n)
         forward(re, im)
         val bins = n / 2 + 1
         return Spectrum(re.copyOf(bins), im.copyOf(bins))
     }
-
-    /** `np.fft.rfft(x)` for a float32 signal (widened to float64 first, like numpy does). */
-    fun rfft(x: FloatArray): Spectrum = rfft(DoubleArray(x.size) { x[it].toDouble() })
 
     /**
      * `np.fft.irfft(spectrum, n)`.
@@ -154,7 +216,8 @@ object Fft {
 
         inverse(fullRe, fullIm)
         val scale = 1.0 / n
-        return DoubleArray(n) { fullRe[it] * scale }
+        for (i in 0 until n) fullRe[i] *= scale
+        return fullRe
     }
 
     /**
